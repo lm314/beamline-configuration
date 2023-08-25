@@ -2,7 +2,12 @@ import ast
 import yaml
 import numpy as np
 
-import pyPartAnalysis.particle_accelerator_utilities as pau
+# Try to import particle_accelerator_utilities for calculation of relativistic 
+# quantities.
+try:
+    import pyPartAnalysis.particle_accelerator_utilities as pau
+except ImportError:
+    pass
 
 class CallableDict(dict):      
     def __getitem__(self, key):
@@ -45,6 +50,30 @@ class BeamlineConfiguration:
         
         return self.__output_dict      
 
+    def split(self):
+        # splits __output_dict into dictionary based off of prefixes of the 
+        # variable names, e.g. {'name1__a': 1, 'name2__b': 2, 'c': 3} becomes
+        # {'name1': {'a': 1}, 'name2': {'b': 2}, 'original': {'c': 3}}
+        
+        d = self.__output_dict
+        result = {}
+        for k, v in d.items():
+            if '__' in k:
+                prefix, suffix = k.split('__')
+                if prefix in result:
+                    result[prefix][suffix] = v
+                else:
+                    result[prefix] = {suffix: v}
+            else:
+                if 'original' in result:
+                    result['original'][k] = v
+                else:
+                    result['original'] = {k: v}
+        if not result:
+            return d
+        else:
+            return result
+    
     def __process_initial_values(self):
         # for processing 'input' key from settings
         # generates values for input_dict from self.settings
