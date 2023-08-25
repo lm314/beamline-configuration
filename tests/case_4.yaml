@@ -1,0 +1,11 @@
+# input
+Nemission:
+  input:
+    value: 200
+Nemission1:
+  output:
+    function: 3*Nemission**2
+---
+# output
+Nemission: 200
+Nemission1: 120000

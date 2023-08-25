@@ -1,0 +1,7 @@
+# input
+Nemission:
+  input:
+    value: 200
+---
+# ouput
+Nemission: 200

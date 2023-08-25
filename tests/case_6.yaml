@@ -1,0 +1,15 @@
+# input
+Nemission:
+  input:
+    value: 3
+Nemission1:
+  input:
+    value: 2
+Nemission2:
+  output:
+    function: Nemission*Nemission1
+---
+# output
+Nemission: 3
+Nemission1: 2
+Nemission2: 6

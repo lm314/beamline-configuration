@@ -1,0 +1,9 @@
+# input
+Nemission:
+  input:
+    min: 200
+    max: 300
+    step_size: 50
+---
+# output
+Nemission: [200,250,300]
