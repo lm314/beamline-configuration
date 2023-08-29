@@ -179,8 +179,7 @@ class BeamlineConfiguration:
                     
                 new_form += f"np.array({value})"
             else:
-                new_form += formula[pair0:pair1]
-        print(new_form)    
+                new_form += formula[pair0:pair1]   
         return new_form
     
     def __eval_function(self,formula):
