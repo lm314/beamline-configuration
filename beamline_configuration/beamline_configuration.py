@@ -50,12 +50,12 @@ class BeamlineConfiguration:
         
         return self.__output_dict      
 
-    def split(self):
-        # splits __output_dict into dictionary based off of prefixes of the 
+    @staticmethod
+    def split(d):
+        # splits the dict d into dictionary based off of prefixes of the 
         # variable names, e.g. {'name1__a': 1, 'name2__b': 2, 'c': 3} becomes
         # {'name1': {'a': 1}, 'name2': {'b': 2}, 'original': {'c': 3}}
         
-        d = self.__output_dict
         result = {}
         for k, v in d.items():
             if '__' in k:
