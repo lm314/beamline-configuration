@@ -62,11 +62,9 @@ class BeamlineConfiguration:
         # generate dictionary from settings
         # matched_lengths means all variables have the same number 
         # of values and that we do not want every possible combination in the output dictionary
-        
         self.__process_initial_values()
         if not matched_lengths:
             self.__populate_initial_values()
-            
         for key,val in self.settings.items():
             self.__transform_initial_values(key,val)
         
@@ -182,7 +180,7 @@ class BeamlineConfiguration:
                 new_form += f"np.array({value})"
             else:
                 new_form += formula[pair0:pair1]
-            
+        print(new_form)    
         return new_form
     
     def __eval_function(self,formula):
@@ -196,7 +194,7 @@ class BeamlineConfiguration:
     
     def __get_independent_var(self):
         # gets variables that calculated using their own input value
-        return [key for key in self.settings if 'input' in self.settings[key]]
+        return [key for key in self.settings.keys() if 'input' in self.settings[key]]
     
     def __makeInputs(self,*args):
         # given lists of inputs, outputs 2d array with each combination of the lists
