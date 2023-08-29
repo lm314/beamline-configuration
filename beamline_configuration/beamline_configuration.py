@@ -9,21 +9,43 @@ try:
 except ImportError:
     pass
 
-class CallableDict(dict):      
-    def __getitem__(self, key):
-        val = super().__getitem__(key)
-        if callable(val):
-            return val()
-        return val
-    
-    def __eq__(self, other):
-        if self.keys() & other.keys():
-            for key in other.keys():
-                if self[key] != other[key]:
-                    return False
-            return True
-        else:
-            return False
+class ListDict(dict):
+    # each value is a list of equal length or None
+    # iterating over the ListDict iterates over the values in the list 
+    # returning a dictionary with all the keys
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._check_lengths()
+
+    def __setitem__(self, key, value):
+        if value is not None and not isinstance(value, (list, int, float)):
+            raise TypeError("Value must be None, a scalar or a list")
+        super().__setitem__(key, value)
+        self._check_lengths()
+
+    def _check_lengths(self):
+        lengths = [len(v) for v in self.values() if isinstance(v, list)]
+        if len(set(lengths)) > 1:
+            raise ValueError("All lists must have the same length")
+
+    def __iter__(self):
+        self._check_lengths()
+        if all(isinstance(v, (int, float)) for v in self.values()):
+            yield self
+            return
+        self._current_index = 0
+        try:
+            self._max_index = len(next(iter(v for v in self.values() if isinstance(v, list))))
+        except StopIteration:
+            self._max_index = 0
+        return self
+
+    def __next__(self):
+        if self._current_index >= self._max_index:
+            raise StopIteration
+        result = {k: (v[self._current_index] if isinstance(v, list) else v) for k, v in self.items()}
+        self._current_index += 1
+        return result
         
 class BeamlineConfiguration:
     # Processes a settings yaml file to create an input dictionary for use with impact_input
@@ -34,7 +56,7 @@ class BeamlineConfiguration:
         self.__input_dict = self.__create_dict()
         
         #contains the values after transforming __input_dict
-        self.__output_dict = self.__create_dict()
+        self.__output_dict = self.__create_ListDict()
         
     def gen(self,matched_lengths=False):
         # generate dictionary from settings
@@ -52,10 +74,10 @@ class BeamlineConfiguration:
 
     @staticmethod
     def split(d):
-        # splits the dict d into dictionary based off of prefixes of the 
+        # splits __output_dict into dictionary based off of prefixes of the 
         # variable names, e.g. {'name1__a': 1, 'name2__b': 2, 'c': 3} becomes
         # {'name1': {'a': 1}, 'name2': {'b': 2}, 'original': {'c': 3}}
-        
+        # if splitting does occur, the value for each key is a ListDict
         result = {}
         for k, v in d.items():
             if '__' in k:
@@ -72,6 +94,8 @@ class BeamlineConfiguration:
         if not result:
             return d
         else:
+            for key,val in result.items():
+                result[key] = ListDict(zip(val.keys(),val.values()))
             return result
     
     def __process_initial_values(self):
@@ -185,7 +209,14 @@ class BeamlineConfiguration:
     def __create_dict(self):
         # makes an empty dictionary with values None with the keys from settings. 
         key_list = self.settings.keys()
-        d = CallableDict({})
+        d = {}
+        d.__init__(zip(key_list, [None]*len(key_list)))
+        return d
+    
+    def __create_ListDict(self):
+        # makes an empty dictionary with values None with the keys from settings. 
+        key_list = self.settings.keys()
+        d = ListDict({})
         d.__init__(zip(key_list, [None]*len(key_list)))
         return d
     
@@ -194,11 +225,11 @@ def main():
     for i in np.arange(1,9):
         print(i)
         with open(f'input_{i}.yaml', 'r') as file:
-            input_dict = CallableDict(yaml.safe_load(file))
+            input_dict = ListDict(yaml.safe_load(file))
             # input_dict = yaml.safe_load(file)
 
         with open(f'output_{i}.yaml', 'r') as file:
-            output_dict_test = CallableDict(yaml.safe_load(file))
+            output_dict_test = ListDict(yaml.safe_load(file))
             # output_dict_test = yaml.safe_load(file)
 
         a=BeamlineConfiguration(input_dict)
