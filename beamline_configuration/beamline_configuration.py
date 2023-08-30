@@ -30,20 +30,20 @@ class ListDict(dict):
 
     def __iter__(self):
         self._check_lengths()
-        if all(isinstance(v, (int, float)) for v in self.values()):
-            yield self
-            return
         self._current_index = 0
         try:
             self._max_index = len(next(iter(v for v in self.values() if isinstance(v, list))))
         except StopIteration:
-            self._max_index = 0
+            if all(isinstance(v, (int, float)) for v in self.values()):
+                self._max_index = 1
+            else:
+                self._max_index = 0
         return self
 
     def __next__(self):
         if self._current_index >= self._max_index:
             raise StopIteration
-        result = {k: (v[self._current_index] if isinstance(v, list) else v) for k, v in self.items()}
+        result = ListDict({k: (v[self._current_index] if isinstance(v, list) else v) for k, v in self.items()})
         self._current_index += 1
         return result
         
@@ -179,7 +179,7 @@ class BeamlineConfiguration:
                     
                 new_form += f"np.array({value})"
             else:
-                new_form += formula[pair0:pair1]   
+                new_form += formula[pair0:pair1]
         return new_form
     
     def __eval_function(self,formula):
