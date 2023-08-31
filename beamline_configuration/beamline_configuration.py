@@ -49,7 +49,7 @@ class ListDict(dict):
         
 class BeamlineConfiguration:
     # Processes a settings yaml file to create an input dictionary for use with impact_input
-    def __init__(self,filename,settings=None):
+    def __init__(self,filename="",settings=None):
         # user can either specify the settings dictionary or a yaml filename.
         if settings is not None:
             self.settings = settings
@@ -66,17 +66,13 @@ class BeamlineConfiguration:
         # generate dictionary from settings
         # matched_lengths means all variables have the same number 
         # of values and that we do not want every possible combination in the output dictionary
-        self.__output_dict._check_lengths()
+        
+        # reset calculation ictionaries between generations
+        self = BeamlineConfiguration(settings = self.settings)
         
         self.__process_initial_values()
-        
-        self.__output_dict._check_lengths()
-        
         if not matched_lengths:
             self.__populate_initial_values()
-        
-        self.__output_dict._check_lengths()
-        
         for key,val in self.settings.items():
             self.__transform_initial_values(key,val)
         
