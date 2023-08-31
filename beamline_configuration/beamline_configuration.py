@@ -49,8 +49,12 @@ class ListDict(dict):
         
 class BeamlineConfiguration:
     # Processes a settings yaml file to create an input dictionary for use with impact_input
-    def __init__(self,settings):
-        self.settings = settings
+    def __init__(self,filename,settings=None):
+        # user can either specify the settings dictionary or a yaml filename.
+        if settings is not None:
+            self.settings = settings
+        else:
+            self.settings = BeamlineConfiguration.load_settings(filename)
         
         # holds the values created from settings 
         self.__input_dict = self.__create_dict()
@@ -62,9 +66,17 @@ class BeamlineConfiguration:
         # generate dictionary from settings
         # matched_lengths means all variables have the same number 
         # of values and that we do not want every possible combination in the output dictionary
+        self.__output_dict._check_lengths()
+        
         self.__process_initial_values()
+        
+        self.__output_dict._check_lengths()
+        
         if not matched_lengths:
             self.__populate_initial_values()
+        
+        self.__output_dict._check_lengths()
+        
         for key,val in self.settings.items():
             self.__transform_initial_values(key,val)
         
@@ -96,6 +108,13 @@ class BeamlineConfiguration:
                 result[key] = ListDict(zip(val.keys(),val.values()))
             return result
     
+    @staticmethod
+    def load_settings(filename):
+        with open(filename, 'r') as file:
+            settings = yaml.safe_load(file)
+    
+        return settings
+    
     def __process_initial_values(self):
         # for processing 'input' key from settings
         # generates values for input_dict from self.settings
@@ -116,7 +135,6 @@ class BeamlineConfiguration:
         # get values for all independent variables and make every possible combination of variables
         ind_vars = self.__get_independent_var()
         temp_vars = [np.array(self.__input_dict[ind_var]) for ind_var in ind_vars]
-        
         temp_arr = self.__makeInputs(*temp_vars)
 
         # redistribute new values with all combination to their original dict entries
