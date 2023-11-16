@@ -211,11 +211,12 @@ class BeamlineConfiguration:
     
     def __makeInputs(self,*args):
         # given lists of inputs, outputs 2d array with each combination of the lists
-        grid_mats = np.meshgrid(*np.array([*args],dtype=object))
-        temp = []
-        for grid in grid_mats:
-            temp.append(grid.ravel())
-        return np.array(temp).T
+        
+        # ensure each argument is a list or array
+        args = [np.array(arg).reshape(-1) for arg in args]
+        
+        combinations = list(itertools.product(*args))
+        return np.array(combinations)
     
     def __create_dict(self):
         # makes an empty dictionary with values None with the keys from settings. 
