@@ -1,6 +1,7 @@
 import ast
 import yaml
 import numpy as np
+import itertools
 
 # Try to import particle_accelerator_utilities for calculation of relativistic 
 # quantities.
