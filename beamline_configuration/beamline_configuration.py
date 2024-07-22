@@ -1,7 +1,7 @@
 import ast
+import itertools
 import yaml
 import numpy as np
-import itertools
 
 # Try to import particle_accelerator_utilities for calculation of relativistic 
 # quantities.
@@ -9,6 +9,12 @@ try:
     import pyPartAnalysis.particle_accelerator_utilities as pau
 except ImportError:
     pass
+
+class BeamlineCongurationUnexpectedKeyError(Exception):
+    # Error for handling unexpected nested keys in BeamlineConfiguration.
+    # Only nested keys "output" and "input" are expected.
+    def __init__(self, key, nested_keys):
+        self.message = f'The key {key} has unexpected nested keys {", ".join(nested_keys)}.'
 
 class ListDict(dict):
     # each value is a list of equal length or None
@@ -71,11 +77,17 @@ class BeamlineConfiguration:
         # reset calculation ictionaries between generations
         self = BeamlineConfiguration(settings = self.settings)
         
-        self.__process_initial_values()
-        if not matched_lengths:
-            self.__populate_initial_values()
-        for key,val in self.settings.items():
-            self.__transform_initial_values(key,val)
+        try:
+            # check that all settings keys have nested dictionary with keys input or output
+            self.__check_nested_keys()
+            
+            self.__process_initial_values()
+            if not matched_lengths:
+                self.__populate_initial_values()
+            for key,val in self.settings.items():
+                self.__transform_initial_values(key,val)
+        except BeamlineCongurationUnexpectedKeyError as e:
+            print(e.message)
         
         return self.__output_dict      
 
@@ -111,6 +123,24 @@ class BeamlineConfiguration:
             settings = yaml.safe_load(file)
     
         return settings
+    
+    def __check_nested_keys(self):
+        # check that all settings keys have nested dictionary with keys input or output
+         for key,val in self.settings.items():
+            if not set(val.keys()).issubset({'input','output'}):
+                # check that only input and output keys are in the first nested level
+                raise BeamlineCongurationUnexpectedKeyError(key,val.keys())
+            
+            # check that input and output keys have the expected nested keys    
+            input_keys = frozenset(val.get('input',{}).keys())
+            input_bad_keys = input_keys.difference({'value','min','max','number_steps','step_size'})
+            if input_bad_keys:
+                raise BeamlineCongurationUnexpectedKeyError(key,input_bad_keys)
+                
+            output_keys = frozenset(val.get('output',{}).keys())
+            output_bad_keys = output_keys.difference({'function'})
+            if output_bad_keys:
+                raise BeamlineCongurationUnexpectedKeyError(key,output_bad_keys)
     
     def __process_initial_values(self):
         # for processing 'input' key from settings
@@ -195,6 +225,7 @@ class BeamlineConfiguration:
                 new_form += f"np.array({value})"
             else:
                 new_form += formula[pair0:pair1]
+        
         return new_form
     
     def __eval_function(self,formula):
@@ -218,7 +249,7 @@ class BeamlineConfiguration:
         
         combinations = list(itertools.product(*args))
         return np.array(combinations)
-    
+
     def __create_dict(self):
         # makes an empty dictionary with values None with the keys from settings. 
         key_list = self.settings.keys()
